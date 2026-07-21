@@ -48,6 +48,10 @@ export function Sidebar() {
     setProfileUserId,
     liveTrafficOn,
     setLiveTrafficOn,
+    setMentionsOpen,
+    setStatusPickerOpen,
+    soundOn,
+    setSoundOn,
   } = useWorkspace();
   const me = users.find((u) => u.id === currentUserId)!;
   const online = users.filter(
@@ -93,7 +97,15 @@ export function Sidebar() {
               label="Team roster"
               onClick={() => setRosterOpen(true)}
             />
-            <SidebarLink label="Mentions" badge={mentionCount || undefined} />
+            <SidebarLink
+              label="Mentions"
+              badge={mentionCount || undefined}
+              onClick={() => setMentionsOpen(true)}
+            />
+            <SidebarLink
+              label="Set status"
+              onClick={() => setStatusPickerOpen(true)}
+            />
             <SidebarLink
               label={me.presence === "assist" ? "End assist" : "Start assist"}
               onClick={() => setAssistStatus(me.presence !== "assist")}
@@ -101,6 +113,10 @@ export function Sidebar() {
             <SidebarLink
               label={liveTrafficOn ? "Live traffic · on" : "Live traffic · off"}
               onClick={() => setLiveTrafficOn(!liveTrafficOn)}
+            />
+            <SidebarLink
+              label={soundOn ? "Alert sound · on" : "Alert sound · off"}
+              onClick={() => setSoundOn(!soundOn)}
             />
             <SidebarLink label="End shift" onClick={requestHandoff} />
           </nav>
@@ -166,7 +182,7 @@ export function Sidebar() {
         <div className="border-t border-border p-2">
           <button
             type="button"
-            onClick={() => setProfileUserId(me.id)}
+            onClick={() => setStatusPickerOpen(true)}
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-white/5"
           >
             <span className="relative">
@@ -180,9 +196,7 @@ export function Sidebar() {
                 {me.name}
               </div>
               <div className="truncate font-mono text-[10px] text-sidebar-muted">
-                {me.presence === "assist"
-                  ? "On remote assist"
-                  : me.status ?? me.title}
+                {me.status ?? me.title}
               </div>
             </div>
             <span

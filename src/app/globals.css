@@ -121,3 +121,16 @@ body {
   }
 }
 
+@keyframes mention-flash {
+  0% {
+    background-color: rgba(245, 158, 11, 0.28);
+  }
+  100% {
+    background-color: rgba(245, 158, 11, 0.08);
+  }
+}
+
+.animate-mention-flash {
+  animation: mention-flash 1.2s ease-out 2;
+}
+

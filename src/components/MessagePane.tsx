@@ -47,8 +47,11 @@ export function MessagePane() {
     setRunbooksOpen,
     setPinsOpen,
     setSearchOpen,
+    focusMessageId,
+    setMentionsOpen,
   } = useWorkspace();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const skipAutoScroll = useRef(false);
 
   const conversationMessages = useMemo(
     () =>
@@ -87,8 +90,18 @@ export function MessagePane() {
   }, [active, channels]);
 
   useEffect(() => {
+    if (focusMessageId) {
+      skipAutoScroll.current = true;
+      const el = document.getElementById(`msg-${focusMessageId}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (skipAutoScroll.current) {
+      skipAutoScroll.current = false;
+      return;
+    }
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversationMessages.length, active.id]);
+  }, [conversationMessages.length, active.id, focusMessageId]);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col bg-surface">
@@ -118,6 +131,7 @@ export function MessagePane() {
           )}
         </div>
         <div className="hidden items-center gap-1 sm:flex">
+          <HeaderBtn label="Mentions" onClick={() => setMentionsOpen(true)} />
           <HeaderBtn label="Pins" onClick={() => setPinsOpen(true)} />
           <HeaderBtn label="Runbooks" onClick={() => setRunbooksOpen(true)} />
           <HeaderBtn label="Search" onClick={() => setSearchOpen(true)} />
@@ -153,6 +167,7 @@ export function MessagePane() {
                 userName={user?.name ?? "Unknown"}
                 avatar={user?.avatar ?? "?"}
                 compact={compact}
+                focused={focusMessageId === msg.id}
                 onOpenThread={() => setThreadRootId(msg.id)}
                 onToggleReaction={(emoji) => toggleReaction(msg.id, emoji)}
                 onTogglePin={() => togglePin(msg.id)}
@@ -171,6 +186,7 @@ function MessageRow({
   userName,
   avatar,
   compact,
+  focused,
   onOpenThread,
   onToggleReaction,
   onTogglePin,
@@ -179,6 +195,7 @@ function MessageRow({
   userName: string;
   avatar: string;
   compact: boolean;
+  focused?: boolean;
   onOpenThread: () => void;
   onToggleReaction: (emoji: string) => void;
   onTogglePin: () => void;
@@ -189,9 +206,12 @@ function MessageRow({
 
   return (
     <div
-      className={`group relative rounded-md px-2 py-0.5 hover:bg-hover ${
-        compact ? "mt-0" : "mt-2 pt-1"
-      }`}
+      id={`msg-${message.id}`}
+      className={`group relative rounded-md px-2 py-0.5 transition-colors ${
+        focused
+          ? "animate-mention-flash bg-amber-500/15 ring-1 ring-amber-400/40"
+          : "hover:bg-hover"
+      } ${compact ? "mt-0" : "mt-2 pt-1"}`}
       onMouseLeave={() => setMenuOpen(false)}
     >
       <div className="flex gap-2">

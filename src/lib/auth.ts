@@ -1,7 +1,19 @@
 import { DEMO_ACCOUNTS, getUser } from "./data";
-import type { SessionUser } from "./types";
+import type { SessionUser, ShiftMetrics } from "./types";
 
-const SESSION_KEY = "zoox-ops:session";
+const SESSION_KEY = "zoox-workspace:session";
+const SHIFT_KEY = "zoox-workspace:shift";
+const PREFS_KEY = "zoox-workspace:prefs";
+
+export type WorkspacePrefs = {
+  liveTrafficOn: boolean;
+  soundOn: boolean;
+};
+
+const DEFAULT_PREFS: WorkspacePrefs = {
+  liveTrafficOn: true,
+  soundOn: true,
+};
 
 export function authenticate(
   email: string,
@@ -44,6 +56,51 @@ export function loadSession(): SessionUser | null {
 export function clearSession() {
   try {
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SHIFT_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function saveShift(shift: ShiftMetrics) {
+  try {
+    localStorage.setItem(SHIFT_KEY, JSON.stringify(shift));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function loadShift(): ShiftMetrics | null {
+  try {
+    const raw = localStorage.getItem(SHIFT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as ShiftMetrics;
+  } catch {
+    return null;
+  }
+}
+
+export function clearShift() {
+  try {
+    localStorage.removeItem(SHIFT_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function loadPrefs(): WorkspacePrefs {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return { ...DEFAULT_PREFS };
+    return { ...DEFAULT_PREFS, ...(JSON.parse(raw) as WorkspacePrefs) };
+  } catch {
+    return { ...DEFAULT_PREFS };
+  }
+}
+
+export function savePrefs(prefs: WorkspacePrefs) {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
   } catch {
     /* ignore */
   }

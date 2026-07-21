@@ -10,7 +10,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { clearSession, loadSession, saveSession } from "./auth";
+import {
+  clearSession,
+  clearShift,
+  loadPrefs,
+  loadSession,
+  loadShift,
+  savePrefs,
+  saveSession,
+  saveShift,
+} from "./auth";
 import {
   channels as seedChannels,
   directMessages as seedDms,
@@ -22,6 +31,7 @@ import {
 } from "./data";
 import { LIVE_EVENTS } from "./liveTraffic";
 import { extractMentionUserIds } from "./parseMessage";
+import { playAlertSound } from "./sound";
 import type {
   AlertToast,
   AppScreen,
@@ -30,6 +40,7 @@ import type {
   Incident,
   IncidentStage,
   Message,
+  Presence,
   SessionUser,
   ShiftMetrics,
   User,
@@ -54,10 +65,15 @@ type WorkspaceContextValue = {
   searchOpen: boolean;
   pinsOpen: boolean;
   rosterOpen: boolean;
+  mentionsOpen: boolean;
+  statusPickerOpen: boolean;
   profileUserId: string | null;
+  focusMessageId: string | null;
   liveTrafficOn: boolean;
+  soundOn: boolean;
   alerts: AlertToast[];
   mentionCount: number;
+  mentionMessages: Message[];
   shift: ShiftMetrics | null;
   handoffNotes: string;
   login: (user: SessionUser) => void;
@@ -75,8 +91,14 @@ type WorkspaceContextValue = {
   setSearchOpen: (open: boolean) => void;
   setPinsOpen: (open: boolean) => void;
   setRosterOpen: (open: boolean) => void;
+  setMentionsOpen: (open: boolean) => void;
+  setStatusPickerOpen: (open: boolean) => void;
   setProfileUserId: (id: string | null) => void;
   setLiveTrafficOn: (on: boolean) => void;
+  setSoundOn: (on: boolean) => void;
+  setFocusMessageId: (id: string | null) => void;
+  jumpToMessage: (messageId: string) => void;
+  setCustomStatus: (status: string, presence: Presence) => void;
   openDm: (userId: string) => void;
   dismissAlert: (id: string) => void;
   sendMessage: (text: string, threadId?: string, attachmentName?: string) => void;
@@ -115,54 +137,94 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [pinsOpen, setPinsOpen] = useState(false);
   const [rosterOpen, setRosterOpen] = useState(false);
+  const [mentionsOpen, setMentionsOpen] = useState(false);
+  const [statusPickerOpen, setStatusPickerOpen] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
-  const [liveTrafficOn, setLiveTrafficOn] = useState(true);
+  const [focusMessageId, setFocusMessageId] = useState<string | null>(null);
+  const [liveTrafficOn, setLiveTrafficOnState] = useState(true);
+  const [soundOn, setSoundOnState] = useState(true);
   const [alerts, setAlerts] = useState<AlertToast[]>([]);
   const [shift, setShift] = useState<ShiftMetrics | null>(null);
   const [handoffNotes, setHandoffNotes] = useState("");
   const [liveIndex, setLiveIndex] = useState(0);
   const activeRef = useRef(active);
+  const threadRef = useRef(threadRootId);
+  const soundRef = useRef(soundOn);
 
   useEffect(() => {
     activeRef.current = active;
   }, [active]);
+  useEffect(() => {
+    threadRef.current = threadRootId;
+  }, [threadRootId]);
+  useEffect(() => {
+    soundRef.current = soundOn;
+  }, [soundOn]);
 
   useEffect(() => {
     const existing = loadSession();
+    const prefs = loadPrefs();
+    setLiveTrafficOnState(prefs.liveTrafficOn);
+    setSoundOnState(prefs.soundOn);
     if (existing) {
       setSession(existing);
+      const savedShift = loadShift();
+      setShift(
+        savedShift ?? {
+          startedAt: new Date().toISOString(),
+          messagesSent: 0,
+          incidentsAcknowledged: 0,
+          assists: 0,
+        },
+      );
       setScreen("workspace");
-      setShift({
-        startedAt: new Date().toISOString(),
-        messagesSent: 0,
-        incidentsAcknowledged: 0,
-        assists: 0,
-      });
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
+    if (!shift) return;
+    saveShift(shift);
+  }, [shift]);
+
+  const setLiveTrafficOn = useCallback((on: boolean) => {
+    setLiveTrafficOnState(on);
+    savePrefs({ ...loadPrefs(), liveTrafficOn: on });
+  }, []);
+
+  const setSoundOn = useCallback((on: boolean) => {
+    setSoundOnState(on);
+    savePrefs({ ...loadPrefs(), soundOn: on });
+  }, []);
+
+  const pushAlert = useCallback((alert: Omit<AlertToast, "id">) => {
+    setAlerts((prev) => [...prev, { id: uid("alert"), ...alert }]);
+    if (
+      soundRef.current &&
+      (alert.type === "pager" || alert.type === "incident")
+    ) {
+      playAlertSound();
+    }
+  }, []);
+
+  useEffect(() => {
     if (!hydrated || screen !== "workspace") return;
     const t = window.setTimeout(() => {
-      setAlerts((prev) => [
-        ...prev,
-        {
-          id: uid("alert"),
-          type: "pager",
-          title: "PagerDuty · HD-4421",
-          body: "ZX-1134 telemetry gap still open — eng on-call escalation window.",
-        },
-      ]);
+      pushAlert({
+        type: "pager",
+        title: "PagerDuty · HD-4421",
+        body: "ZX-1134 telemetry gap still open — eng on-call escalation window.",
+      });
     }, 12000);
     return () => window.clearTimeout(t);
-  }, [hydrated, screen]);
+  }, [hydrated, screen, pushAlert]);
 
   useEffect(() => {
     if (!hydrated || screen !== "workspace" || !liveTrafficOn) return;
     if (liveIndex >= LIVE_EVENTS.length) return;
 
-    const delay = 9000 + (liveIndex % 3) * 4000;
+    const quiet = !!threadRef.current;
+    const delay = (quiet ? 22000 : 9000) + (liveIndex % 3) * (quiet ? 6000 : 4000);
     const t = window.setTimeout(() => {
       const event = LIVE_EVENTS[liveIndex];
       const viewing =
@@ -192,30 +254,35 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
 
       if (event.alert) {
-        setAlerts((prev) => [
-          ...prev,
-          { id: uid("alert"), ...event.alert! },
-        ]);
+        pushAlert(event.alert);
       }
 
       setLiveIndex((i) => i + 1);
     }, delay);
 
     return () => window.clearTimeout(t);
-  }, [hydrated, screen, liveTrafficOn, liveIndex]);
+  }, [hydrated, screen, liveTrafficOn, liveIndex, pushAlert]);
 
   const currentUserId = session?.userId ?? "u1";
 
-  const mentionCount = useMemo(() => {
+  const mentionMessages = useMemo(() => {
     const handle = getUser(currentUserId)?.displayName;
-    if (!handle) return 0;
-    return messages.filter(
-      (m) =>
-        !m.threadId &&
-        m.userId !== currentUserId &&
-        m.text.toLowerCase().includes(`@${handle.toLowerCase()}`),
-    ).length;
+    if (!handle) return [] as Message[];
+    const needle = `@${handle.toLowerCase()}`;
+    return messages
+      .filter(
+        (m) =>
+          !m.threadId &&
+          m.userId !== currentUserId &&
+          m.text.toLowerCase().includes(needle),
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
   }, [messages, currentUserId]);
+
+  const mentionCount = mentionMessages.length;
 
   const clearUnread = useCallback((conversation: Conversation) => {
     if (conversation.type === "channel") {
@@ -251,28 +318,28 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearSession();
+    clearShift();
     setSession(null);
     setShift(null);
     setScreen("login");
   }, []);
 
   const clockIn = useCallback(() => {
-    setShift({
+    const next = {
       startedAt: new Date().toISOString(),
       messagesSent: 0,
       incidentsAcknowledged: 0,
       assists: 0,
-    });
+    };
+    setShift(next);
+    saveShift(next);
     setScreen("workspace");
-    setAlerts([
-      {
-        id: uid("alert"),
-        type: "info",
-        title: "Shift started",
-        body: "Clocked in at 1600 Bryant St · Bay coverage live.",
-      },
-    ]);
-  }, []);
+    pushAlert({
+      type: "info",
+      title: "Shift started",
+      body: "Clocked in at 1600 Bryant St · Bay coverage live.",
+    });
+  }, [pushAlert]);
 
   const requestHandoff = useCallback(() => setScreen("handoff"), []);
   const continueShift = useCallback(() => setScreen("workspace"), []);
@@ -294,6 +361,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         ]);
       }
       clearSession();
+      clearShift();
       setSession(null);
       setShift(null);
       setHandoffNotes("");
@@ -420,17 +488,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             }
           : s,
       );
-      setAlerts((prev) => [
-        ...prev,
-        {
-          id: uid("alert"),
-          type: "incident",
-          title: "Incident acknowledged",
-          body: "Ticket moved to acknowledged.",
-        },
-      ]);
+      pushAlert({
+        type: "incident",
+        title: "Incident acknowledged",
+        body: "Ticket moved to acknowledged.",
+      });
     },
-    [],
+    [pushAlert],
   );
 
   const resolveIncident = useCallback((id: string) => {
@@ -465,6 +529,37 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
     },
     [currentUserId],
+  );
+
+  const setCustomStatus = useCallback(
+    (status: string, presence: Presence) => {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === currentUserId ? { ...u, status, presence } : u,
+        ),
+      );
+      if (presence === "assist") {
+        setShift((s) => (s ? { ...s, assists: s.assists + 1 } : s));
+      }
+    },
+    [currentUserId],
+  );
+
+  const jumpToMessage = useCallback(
+    (messageId: string) => {
+      const msg = messages.find((m) => m.id === messageId);
+      if (!msg) return;
+      const isDm = msg.channelId.startsWith("dm-");
+      setActive(
+        isDm
+          ? { type: "dm", id: msg.channelId }
+          : { type: "channel", id: msg.channelId },
+      );
+      setMentionsOpen(false);
+      setFocusMessageId(messageId);
+      window.setTimeout(() => setFocusMessageId(null), 2600);
+    },
+    [messages, setActive],
   );
 
   const openDm = useCallback(
@@ -506,10 +601,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       searchOpen,
       pinsOpen,
       rosterOpen,
+      mentionsOpen,
+      statusPickerOpen,
       profileUserId,
+      focusMessageId,
       liveTrafficOn,
+      soundOn,
       alerts,
       mentionCount,
+      mentionMessages,
       shift,
       handoffNotes,
       login,
@@ -527,8 +627,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setSearchOpen,
       setPinsOpen,
       setRosterOpen,
+      setMentionsOpen,
+      setStatusPickerOpen,
       setProfileUserId,
       setLiveTrafficOn,
+      setSoundOn,
+      setFocusMessageId,
+      jumpToMessage,
+      setCustomStatus,
       openDm,
       dismissAlert,
       sendMessage,
@@ -558,10 +664,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       searchOpen,
       pinsOpen,
       rosterOpen,
+      mentionsOpen,
+      statusPickerOpen,
       profileUserId,
+      focusMessageId,
       liveTrafficOn,
+      soundOn,
       alerts,
       mentionCount,
+      mentionMessages,
       shift,
       handoffNotes,
       login,
@@ -580,6 +691,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       clearUnread,
       dismissAlert,
       openDm,
+      setLiveTrafficOn,
+      setSoundOn,
+      jumpToMessage,
+      setCustomStatus,
     ],
   );
 
