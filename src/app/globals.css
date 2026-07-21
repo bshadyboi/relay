@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+:root {
+  --sidebar: #3f0e40;
+  --sidebar-fg: #d1c4d1;
+  --sidebar-muted: #ab9bab;
+  --sidebar-active: #1164a3;
+  --surface: #ffffff;
+  --chrome: #1a1d21;
+  --ink: #1d1c1d;
+  --ink-muted: #616061;
+  --border: #e8e8e8;
+  --hover: #f8f8f8;
+  --accent: #007a5a;
+  --accent-soft: #e7f7f1;
+  --link: #1264a3;
+  --avatar: #4a154b;
+  --presence-active: #2bac76;
+  --presence-away: #ecb22e;
+  --presence-dnd: #e01e5a;
+  --presence-offline: #9a9b9e;
+}
+
+@theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-fg: var(--sidebar-fg);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-surface: var(--surface);
+  --color-chrome: var(--chrome);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-border: var(--border);
+  --color-hover: var(--hover);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-link: var(--link);
+  --color-avatar: var(--avatar);
+  --color-presence-active: var(--presence-active);
+  --color-presence-away: var(--presence-away);
+  --color-presence-dnd: var(--presence-dnd);
+  --color-presence-offline: var(--presence-offline);
+  --font-sans: var(--font-lato);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--chrome);
+  color: var(--ink);
+  font-family: var(--font-lato), "Lato", "Helvetica Neue", Helvetica, Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #c7c7c7 transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #c7c7c7;
+  border-radius: 8px;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 180ms ease-out;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
