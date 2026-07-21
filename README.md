@@ -1,34 +1,34 @@
 # Zoox Fleet Ops — Workspace
 
-Slack-style team chat remixed as a **Zoox remote fleet operations** work environment. Dark ops chrome, fleet channels, and roster pulled from the Zoox Fleet Ops simulation.
+Slack-style ops chat for **Zoox Fleet Operations** at **1600 Bryant St, San Francisco**.
 
 ## Live
 
-[https://relay-one-livid.vercel.app](https://relay-one-livid.vercel.app)
+[https://zoox-ops.vercel.app](https://zoox-ops.vercel.app)
 
 ## Features
 
-- **Ops channels** — `#fleet-ops-bay`, `#field-dispatch`, `#eng-oncall`, `#incidents`, `#shift-handoff`
-- **Fleet status bar** — in-service / charging / incident counts
-- **DMs** — operators, field tech, eng on-call, depot
-- **Threads & reactions** — incident follow-ups without leaving channel context
-- You play as **Brandon Peralta** (Remote Fleet Operator · Bay-2)
+- Login as Brandon / Sarah / Field Tech / Eng (`demo1234`)
+- Shift clock-in + handoff notes posted to `#shift-handoff`
+- Incident chips (`INC-8842`) and vehicle chips (`ZX-1199`) in messages
+- Search (`⌘K`), pins, runbooks, PagerDuty toasts
+- @mentions, file attach (local preview), remote-assist presence
+- Ops status bar · Bryant site
 
-## Stack
+## Demo login
 
-- Next.js 16 · React 19 · TypeScript · Tailwind CSS 4
+| Email | Password |
+| --- | --- |
+| `bperalta1@zoox.com` | `demo1234` |
+| `sokonkwo@zoox.com` | `demo1234` |
+| `mchen@zoox.com` | `demo1234` |
+| `pnair@zoox.com` | `demo1234` |
 
-## Run locally
+## Run
 
 ```bash
 npm install
 npm run dev
-```
-
-## Deploy
-
-```bash
-npx vercel --prod
 ```
 
 Simulated environment only — not affiliated with Zoox.

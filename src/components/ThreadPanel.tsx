@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { CURRENT_USER_ID, getUser } from "@/lib/data";
+import { Composer } from "@/components/Composer";
+import { MessageBody } from "@/components/MessageBody";
+import { getUser } from "@/lib/data";
 import { useWorkspace } from "@/lib/workspace";
-import { Composer } from "./Composer";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], {
@@ -18,6 +19,7 @@ export function ThreadPanel() {
     setThreadRootId,
     messages,
     toggleReaction,
+    currentUserId,
   } = useWorkspace();
 
   const root = useMemo(
@@ -52,7 +54,7 @@ export function ThreadPanel() {
           className="rounded p-1.5 text-ink-muted hover:bg-hover"
           aria-label="Close thread"
         >
-          <CloseIcon />
+          ✕
         </button>
       </header>
 
@@ -62,7 +64,9 @@ export function ThreadPanel() {
           avatar={rootUser?.avatar ?? "?"}
           time={formatTime(root.createdAt)}
           text={root.text}
+          attachmentName={root.attachmentName}
           reactions={root.reactions}
+          currentUserId={currentUserId}
           onToggle={(emoji) => toggleReaction(root.id, emoji)}
         />
 
@@ -82,7 +86,9 @@ export function ThreadPanel() {
               avatar={u?.avatar ?? "?"}
               time={formatTime(r.createdAt)}
               text={r.text}
+              attachmentName={r.attachmentName}
               reactions={r.reactions}
+              currentUserId={currentUserId}
               onToggle={(emoji) => toggleReaction(r.id, emoji)}
             />
           );
@@ -99,14 +105,18 @@ function ThreadMessage({
   avatar,
   time,
   text,
+  attachmentName,
   reactions,
+  currentUserId,
   onToggle,
 }: {
   name: string;
   avatar: string;
   time: string;
   text: string;
+  attachmentName?: string;
   reactions: { emoji: string; userIds: string[] }[];
+  currentUserId: string;
   onToggle: (emoji: string) => void;
 }) {
   return (
@@ -119,13 +129,11 @@ function ThreadMessage({
           <span className="text-sm font-semibold text-white">{name}</span>
           <time className="font-mono text-[11px] text-ink-muted">{time}</time>
         </div>
-        <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.5] text-ink">
-          {text}
-        </p>
+        <MessageBody text={text} attachmentName={attachmentName} />
         {reactions.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {reactions.map((r) => {
-              const mine = r.userIds.includes(CURRENT_USER_ID);
+              const mine = r.userIds.includes(currentUserId);
               return (
                 <button
                   key={r.emoji}
@@ -145,13 +153,5 @@ function ThreadMessage({
         )}
       </div>
     </div>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-    </svg>
   );
 }

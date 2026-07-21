@@ -15,7 +15,7 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Zoox Fleet Ops — Workspace",
   description:
-    "Zoox remote fleet operations workspace chat — channels, DMs, incidents, and shift handoffs.",
+    "Zoox remote fleet operations workspace at 1600 Bryant St — channels, incidents, vehicles, and shift handoffs.",
 };
 
 export default function RootLayout({

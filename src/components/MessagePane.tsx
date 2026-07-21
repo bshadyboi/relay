@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CURRENT_USER_ID, getUser } from "@/lib/data";
+import { MessageBody } from "@/components/MessageBody";
+import { getUser } from "@/lib/data";
 import type { Message } from "@/lib/types";
 import { useWorkspace } from "@/lib/workspace";
 
@@ -38,9 +39,14 @@ export function MessagePane() {
     active,
     channels,
     directMessages,
+    users,
     setThreadRootId,
     toggleReaction,
+    togglePin,
     setSidebarOpen,
+    setRunbooksOpen,
+    setPinsOpen,
+    setSearchOpen,
   } = useWorkspace();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -61,9 +67,9 @@ export function MessagePane() {
       return ch ? `${ch.isPrivate ? "🔒 " : "#"}${ch.name}` : "";
     }
     const dm = directMessages.find((d) => d.id === active.id);
-    const user = dm ? getUser(dm.userId) : undefined;
+    const user = dm ? users.find((u) => u.id === dm.userId) : undefined;
     return user?.name ?? "Direct message";
-  }, [active, channels, directMessages]);
+  }, [active, channels, directMessages, users]);
 
   const subtitle = useMemo(() => {
     if (active.type === "channel") {
@@ -71,9 +77,9 @@ export function MessagePane() {
       return ch?.topic ?? ch?.description;
     }
     const dm = directMessages.find((d) => d.id === active.id);
-    const user = dm ? getUser(dm.userId) : undefined;
+    const user = dm ? users.find((u) => u.id === dm.userId) : undefined;
     return user?.status ?? user?.title;
-  }, [active, channels, directMessages]);
+  }, [active, channels, directMessages, users]);
 
   const memberCount = useMemo(() => {
     if (active.type !== "channel") return null;
@@ -112,19 +118,17 @@ export function MessagePane() {
           )}
         </div>
         <div className="hidden items-center gap-1 sm:flex">
-          <HeaderBtn label="Runbooks" />
-          <HeaderBtn label="Roster" />
+          <HeaderBtn label="Pins" onClick={() => setPinsOpen(true)} />
+          <HeaderBtn label="Runbooks" onClick={() => setRunbooksOpen(true)} />
+          <HeaderBtn label="Search" onClick={() => setSearchOpen(true)} />
         </div>
       </header>
 
       <div className="flex-1 overflow-y-auto px-2 py-3 scrollbar-thin sm:px-4">
-        {conversationMessages.length === 0 && (
-          <EmptyState title={title} />
-        )}
+        {conversationMessages.length === 0 && <EmptyState title={title} />}
         {conversationMessages.map((msg, i) => {
           const prev = conversationMessages[i - 1];
-          const showDay =
-            !prev || !sameDay(prev.createdAt, msg.createdAt);
+          const showDay = !prev || !sameDay(prev.createdAt, msg.createdAt);
           const user = getUser(msg.userId);
           const compact =
             !!prev &&
@@ -151,6 +155,7 @@ export function MessagePane() {
                 compact={compact}
                 onOpenThread={() => setThreadRootId(msg.id)}
                 onToggleReaction={(emoji) => toggleReaction(msg.id, emoji)}
+                onTogglePin={() => togglePin(msg.id)}
               />
             </div>
           );
@@ -168,6 +173,7 @@ function MessageRow({
   compact,
   onOpenThread,
   onToggleReaction,
+  onTogglePin,
 }: {
   message: Message;
   userName: string;
@@ -175,9 +181,11 @@ function MessageRow({
   compact: boolean;
   onOpenThread: () => void;
   onToggleReaction: (emoji: string) => void;
+  onTogglePin: () => void;
 }) {
+  const { currentUserId } = useWorkspace();
   const [menuOpen, setMenuOpen] = useState(false);
-  const isMine = message.userId === CURRENT_USER_ID;
+  const isMine = message.userId === currentUserId;
 
   return (
     <div
@@ -206,15 +214,21 @@ function MessageRow({
               {isMine && (
                 <span className="font-mono text-[10px] text-ink-muted">you</span>
               )}
+              {message.pinned && (
+                <span className="font-mono text-[10px] text-amber-300">
+                  pinned
+                </span>
+              )}
             </div>
           )}
-          <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.5] text-ink">
-            {message.text}
-          </p>
+          <MessageBody
+            text={message.text}
+            attachmentName={message.attachmentName}
+          />
           {message.reactions.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
               {message.reactions.map((r) => {
-                const mine = r.userIds.includes(CURRENT_USER_ID);
+                const mine = r.userIds.includes(currentUserId);
                 return (
                   <button
                     key={r.emoji}
@@ -255,23 +269,28 @@ function MessageRow({
             type="button"
             className="px-1.5 py-1 text-sm hover:bg-hover"
             onClick={() => onToggleReaction(emoji)}
-            title={`React ${emoji}`}
           >
             {emoji}
           </button>
         ))}
         <button
           type="button"
-          className="px-2 py-1 font-mono text-[11px] font-medium text-ink-muted hover:bg-hover hover:text-white"
+          className="px-2 py-1 font-mono text-[11px] text-ink-muted hover:bg-hover hover:text-white"
           onClick={onOpenThread}
         >
           Reply
         </button>
         <button
           type="button"
+          className="px-2 py-1 font-mono text-[11px] text-ink-muted hover:bg-hover hover:text-white"
+          onClick={onTogglePin}
+        >
+          {message.pinned ? "Unpin" : "Pin"}
+        </button>
+        <button
+          type="button"
           className="px-2 py-1 text-ink-muted hover:bg-hover"
           onClick={() => setMenuOpen((v) => !v)}
-          aria-label="More reactions"
         >
           ···
         </button>
@@ -303,21 +322,26 @@ function EmptyState({ title }: { title: string }) {
       <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-white/15 bg-white font-black text-black">
         Z
       </div>
-      <h2 className="text-base font-semibold text-white">
-        Start of {title}
-      </h2>
+      <h2 className="text-base font-semibold text-white">Start of {title}</h2>
       <p className="mt-1 max-w-sm text-sm text-ink-muted">
-        Post fleet updates, incident acks, or dispatch notes. This channel stays
-        with the Zoox ops floor.
+        Post fleet updates, incident acks, or dispatch notes from 1600 Bryant
+        St.
       </p>
     </div>
   );
 }
 
-function HeaderBtn({ label }: { label: string }) {
+function HeaderBtn({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick?: () => void;
+}) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="rounded-md border border-border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-ink-muted hover:border-white/20 hover:text-white"
     >
       {label}
