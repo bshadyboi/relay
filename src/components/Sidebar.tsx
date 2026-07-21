@@ -52,6 +52,8 @@ export function Sidebar() {
     setStatusPickerOpen,
     soundOn,
     setSoundOn,
+    botsEnabled,
+    setBotsEnabled,
   } = useWorkspace();
   const me = users.find((u) => u.id === currentUserId)!;
   const online = users.filter(
@@ -109,6 +111,10 @@ export function Sidebar() {
             <SidebarLink
               label={me.presence === "assist" ? "End assist" : "Start assist"}
               onClick={() => setAssistStatus(me.presence !== "assist")}
+            />
+            <SidebarLink
+              label={botsEnabled ? "AI operators · on" : "AI operators · off"}
+              onClick={() => setBotsEnabled(!botsEnabled)}
             />
             <SidebarLink
               label={liveTrafficOn ? "Live traffic · on" : "Live traffic · off"}

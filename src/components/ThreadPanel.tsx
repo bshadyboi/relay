@@ -20,6 +20,8 @@ export function ThreadPanel() {
     messages,
     toggleReaction,
     currentUserId,
+    typingUserIds,
+    users,
   } = useWorkspace();
 
   const root = useMemo(
@@ -93,6 +95,15 @@ export function ThreadPanel() {
             />
           );
         })}
+        {typingUserIds.length > 0 && (
+          <p className="px-1 py-2 font-mono text-[11px] text-ink-muted">
+            {typingUserIds
+              .map((id) => users.find((u) => u.id === id)?.name.split(" ")[0])
+              .filter(Boolean)
+              .join(", ")}{" "}
+            typing…
+          </p>
+        )}
       </div>
 
       <Composer threadId={threadRootId} placeholder="Reply…" />

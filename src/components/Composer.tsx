@@ -130,8 +130,8 @@ export function Composer({
         />
         <div className="flex items-center justify-between px-2 pb-2">
           <p className="hidden text-[11px] text-ink-muted sm:block">
-            <kbd className="rounded border border-border px-1">Enter</kbd> send ·{" "}
-            <kbd className="rounded border border-border px-1">⌘</kbd>K search
+            <kbd className="rounded border border-border px-1">Enter</kbd> send
+            · AI operators reply in DMs & @mentions
           </p>
           <button
             type="button"

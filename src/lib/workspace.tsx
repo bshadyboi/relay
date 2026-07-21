@@ -31,6 +31,7 @@ import {
 } from "./data";
 import { LIVE_EVENTS } from "./liveTraffic";
 import { extractMentionUserIds } from "./parseMessage";
+import { pickReplyTarget } from "./personas";
 import { playAlertSound } from "./sound";
 import type {
   AlertToast,
@@ -71,6 +72,8 @@ type WorkspaceContextValue = {
   focusMessageId: string | null;
   liveTrafficOn: boolean;
   soundOn: boolean;
+  botsEnabled: boolean;
+  typingUserIds: string[];
   alerts: AlertToast[];
   mentionCount: number;
   mentionMessages: Message[];
@@ -96,6 +99,7 @@ type WorkspaceContextValue = {
   setProfileUserId: (id: string | null) => void;
   setLiveTrafficOn: (on: boolean) => void;
   setSoundOn: (on: boolean) => void;
+  setBotsEnabled: (on: boolean) => void;
   setFocusMessageId: (id: string | null) => void;
   jumpToMessage: (messageId: string) => void;
   setCustomStatus: (status: string, presence: Presence) => void;
@@ -143,6 +147,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [focusMessageId, setFocusMessageId] = useState<string | null>(null);
   const [liveTrafficOn, setLiveTrafficOnState] = useState(true);
   const [soundOn, setSoundOnState] = useState(true);
+  const [botsEnabled, setBotsEnabled] = useState(true);
+  const [typingUserIds, setTypingUserIds] = useState<string[]>([]);
   const [alerts, setAlerts] = useState<AlertToast[]>([]);
   const [shift, setShift] = useState<ShiftMetrics | null>(null);
   const [handoffNotes, setHandoffNotes] = useState("");
@@ -150,6 +156,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const activeRef = useRef(active);
   const threadRef = useRef(threadRootId);
   const soundRef = useRef(soundOn);
+  const messagesRef = useRef(messages);
+  const botsRef = useRef(botsEnabled);
 
   useEffect(() => {
     activeRef.current = active;
@@ -160,6 +168,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     soundRef.current = soundOn;
   }, [soundOn]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+  useEffect(() => {
+    botsRef.current = botsEnabled;
+  }, [botsEnabled]);
 
   useEffect(() => {
     const existing = loadSession();
@@ -370,6 +384,84 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [currentUserId],
   );
 
+  const requestBotReply = useCallback(
+    async (opts: {
+      botUserId: string;
+      channelId: string;
+      threadId?: string;
+      userText: string;
+    }) => {
+      if (!botsRef.current) return;
+      const { botUserId, channelId, threadId, userText } = opts;
+
+      setTypingUserIds((prev) =>
+        prev.includes(botUserId) ? prev : [...prev, botUserId],
+      );
+
+      const history = messagesRef.current
+        .filter(
+          (m) =>
+            m.channelId === channelId &&
+            (threadId ? m.threadId === threadId || m.id === threadId : !m.threadId),
+        )
+        .slice(-10)
+        .map((m) => ({
+          role:
+            m.userId === botUserId
+              ? ("assistant" as const)
+              : ("user" as const),
+          content: m.text,
+        }));
+
+      try {
+        await new Promise((r) =>
+          setTimeout(r, 700 + Math.floor(Math.random() * 900)),
+        );
+
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            botUserId,
+            userText,
+            history,
+          }),
+        });
+        const data = (await res.json()) as { text?: string };
+        const reply = data.text?.trim();
+        if (!reply) return;
+
+        setMessages((prev) => {
+          const next = [
+            ...prev,
+            {
+              id: uid("bot"),
+              channelId,
+              userId: botUserId,
+              text: reply,
+              createdAt: new Date().toISOString(),
+              reactions: [],
+              threadId,
+            },
+          ];
+          if (threadId) {
+            return next.map((m) =>
+              m.id === threadId
+                ? { ...m, replyCount: (m.replyCount ?? 0) + 1 }
+                : m,
+            );
+          }
+          return next;
+        });
+      } catch (err) {
+        console.error("Bot reply failed", err);
+      } finally {
+        setTypingUserIds((prev) => prev.filter((id) => id !== botUserId));
+      }
+    },
+    [],
+  );
+
   const sendMessage = useCallback(
     (text: string, threadId?: string, attachmentName?: string) => {
       const trimmed = text.trim();
@@ -422,8 +514,32 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           },
         ]);
       }
+
+      const dm = directMessages.find((d) => d.id === channelId);
+      const botUserId = pickReplyTarget({
+        channelId,
+        text: body,
+        currentUserId,
+        mentionedUserIds: mentions,
+        dmPartnerId: dm?.userId,
+      });
+
+      if (botUserId && botsRef.current && trimmed) {
+        void requestBotReply({
+          botUserId,
+          channelId,
+          threadId,
+          userText: body,
+        });
+      }
     },
-    [active.id, messages, currentUserId],
+    [
+      active.id,
+      messages,
+      currentUserId,
+      directMessages,
+      requestBotReply,
+    ],
   );
 
   const toggleReaction = useCallback(
@@ -607,6 +723,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       focusMessageId,
       liveTrafficOn,
       soundOn,
+      botsEnabled,
+      typingUserIds,
       alerts,
       mentionCount,
       mentionMessages,
@@ -632,6 +750,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setProfileUserId,
       setLiveTrafficOn,
       setSoundOn,
+      setBotsEnabled,
       setFocusMessageId,
       jumpToMessage,
       setCustomStatus,
@@ -670,6 +789,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       focusMessageId,
       liveTrafficOn,
       soundOn,
+      botsEnabled,
+      typingUserIds,
       alerts,
       mentionCount,
       mentionMessages,

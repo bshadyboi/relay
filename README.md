@@ -9,12 +9,28 @@ Slack-style ops chat for **Zoox Fleet Operations** at **1600 Bryant St, San Fran
 
 ## Features
 
-- Login as Brandon / Sarah / Field Tech / Eng (`demo1234`)
-- Shift clock-in + handoff notes posted to `#shift-handoff`
-- Incident chips (`INC-8842`) and vehicle chips (`ZX-1199`) in messages
-- Search (`⌘K`), pins, runbooks, PagerDuty toasts
-- @mentions, file attach (local preview), remote-assist presence
-- Ops status bar · Bryant site
+- **AI operators** — DMs and `@mentions` get real replies (typing indicator included)
+- Login / shift clock-in / handoff
+- Incident + vehicle chips, search, pins, runbooks, roster
+- Live floor traffic, status picker, pager sounds
+
+## AI replies
+
+Works out of the box with a local persona engine.
+
+For smarter LLM replies, set one of:
+
+```bash
+# .env.local
+OPENAI_API_KEY=sk-...
+# optional
+OPENAI_MODEL=gpt-4o-mini
+
+# or
+ANTHROPIC_API_KEY=...
+```
+
+On Vercel: Project → Settings → Environment Variables → add `OPENAI_API_KEY`, redeploy.
 
 ## Demo login
 
@@ -31,5 +47,7 @@ Slack-style ops chat for **Zoox Fleet Operations** at **1600 Bryant St, San Fran
 npm install
 npm run dev
 ```
+
+Try: DM Sarah → “Can you check ZX-1199?” or in `#fleet-ops-bay` send `@sokonkwo need eyes on cams`.
 
 Simulated environment only — not affiliated with Zoox.

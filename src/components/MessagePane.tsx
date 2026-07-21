@@ -49,6 +49,7 @@ export function MessagePane() {
     setSearchOpen,
     focusMessageId,
     setMentionsOpen,
+    threadRootId,
   } = useWorkspace();
   const bottomRef = useRef<HTMLDivElement>(null);
   const skipAutoScroll = useRef(false);
@@ -176,7 +177,29 @@ export function MessagePane() {
           );
         })}
         <div ref={bottomRef} />
+        {!threadRootId && <TypingIndicator />}
       </div>
+    </div>
+  );
+}
+
+function TypingIndicator() {
+  const { typingUserIds, users } = useWorkspace();
+  const typing = typingUserIds
+    .map((id) => users.find((u) => u.id === id))
+    .filter(Boolean);
+  if (!typing.length) return null;
+  const names = typing.map((u) => u!.name.split(" ")[0]).join(", ");
+  return (
+    <div className="flex items-center gap-2 px-2 py-2 text-[12px] text-ink-muted">
+      <span className="flex gap-1">
+        <span className="size-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:0ms]" />
+        <span className="size-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:150ms]" />
+        <span className="size-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:300ms]" />
+      </span>
+      <span className="font-mono text-[11px]">
+        {names} {typing.length === 1 ? "is" : "are"} typing…
+      </span>
     </div>
   );
 }

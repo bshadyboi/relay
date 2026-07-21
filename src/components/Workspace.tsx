@@ -31,6 +31,7 @@ function OpsStatusBar() {
     currentUserId,
     shift,
     soundOn,
+    botsEnabled,
   } = useWorkspace();
   const open = incidents.filter((i) => i.stage !== "resolved").length;
   const online = users.filter(
@@ -58,6 +59,15 @@ function OpsStatusBar() {
       </span>
       <Stat label="Online" value={String(online)} color="text-presence-active" />
       <Stat label="Incidents" value={String(open)} color="text-urgent" pulse={open > 0} />
+      <span
+        className={`hidden rounded border px-1.5 py-0.5 lg:inline ${
+          botsEnabled
+            ? "border-emerald-500/30 text-emerald-300"
+            : "border-border text-ink-muted"
+        }`}
+      >
+        AI {botsEnabled ? "on" : "off"}
+      </span>
       <button
         type="button"
         onClick={() => setMentionsOpen(true)}
