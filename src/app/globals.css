@@ -1,24 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --sidebar: #3f0e40;
-  --sidebar-fg: #d1c4d1;
-  --sidebar-muted: #ab9bab;
-  --sidebar-active: #1164a3;
-  --surface: #ffffff;
-  --chrome: #1a1d21;
-  --ink: #1d1c1d;
-  --ink-muted: #616061;
-  --border: #e8e8e8;
-  --hover: #f8f8f8;
-  --accent: #007a5a;
-  --accent-soft: #e7f7f1;
-  --link: #1264a3;
-  --avatar: #4a154b;
-  --presence-active: #2bac76;
-  --presence-away: #ecb22e;
-  --presence-dnd: #e01e5a;
-  --presence-offline: #9a9b9e;
+  color-scheme: dark;
+  --sidebar: #000000;
+  --sidebar-fg: #d4d4d4;
+  --sidebar-muted: #737373;
+  --sidebar-active: #262626;
+  --surface: #111111;
+  --chrome: #000000;
+  --ink: #e5e5e5;
+  --ink-muted: #737373;
+  --border: rgba(255, 255, 255, 0.1);
+  --hover: rgba(255, 255, 255, 0.05);
+  --accent: #ffffff;
+  --accent-soft: rgba(255, 255, 255, 0.12);
+  --link: #a3a3a3;
+  --avatar: #262626;
+  --presence-active: #22c55e;
+  --presence-away: #f59e0b;
+  --presence-dnd: #ef4444;
+  --presence-offline: #525252;
+  --urgent: #ef4444;
+  --stat-green: #22c55e;
+  --stat-blue: #3b82f6;
+  --stat-amber: #f59e0b;
 }
 
 @theme inline {
@@ -40,7 +45,9 @@
   --color-presence-away: var(--presence-away);
   --color-presence-dnd: var(--presence-dnd);
   --color-presence-offline: var(--presence-offline);
-  --font-sans: var(--font-lato);
+  --color-urgent: var(--urgent);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-mono);
 }
 
 * {
@@ -56,14 +63,13 @@ body {
   margin: 0;
   background: var(--chrome);
   color: var(--ink);
-  font-family: var(--font-lato), "Lato", "Helvetica Neue", Helvetica, Arial,
-    sans-serif;
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: #c7c7c7 transparent;
+  scrollbar-color: #333 transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -71,8 +77,8 @@ body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #c7c7c7;
-  border-radius: 8px;
+  background: #333;
+  border-radius: 999px;
 }
 
 @keyframes slide-in {
@@ -90,13 +96,16 @@ body {
   animation: slide-in 180ms ease-out;
 }
 
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
+@keyframes pulse-dot {
+  0%,
+  100% {
     opacity: 1;
-    transform: translateY(0);
   }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
 }

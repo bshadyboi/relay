@@ -5,7 +5,7 @@ import { CURRENT_USER_ID, getUser } from "@/lib/data";
 import type { Message } from "@/lib/types";
 import { useWorkspace } from "@/lib/workspace";
 
-const QUICK_EMOJIS = ["👍", "❤️", "😂", "🎉", "👀", "🔥"];
+const QUICK_EMOJIS = ["👍", "👀", "🚨", "✅", "🛠️", "📋"];
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], {
@@ -86,7 +86,7 @@ export function MessagePane() {
 
   return (
     <div className="flex min-w-0 flex-1 flex-col bg-surface">
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border px-4">
+      <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-surface/80 px-4 backdrop-blur-md">
         <button
           type="button"
           className="rounded p-1.5 text-ink-muted hover:bg-hover lg:hidden"
@@ -97,9 +97,11 @@ export function MessagePane() {
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-[17px] font-bold text-ink">{title}</h1>
+            <h1 className="truncate font-mono text-[15px] font-semibold tracking-tight text-white">
+              {title}
+            </h1>
             {memberCount != null && (
-              <span className="hidden items-center gap-1 rounded border border-border px-1.5 py-0.5 text-xs text-ink-muted sm:inline-flex">
+              <span className="hidden items-center gap-1 rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-ink-muted sm:inline-flex">
                 <PeopleIcon />
                 {memberCount}
               </span>
@@ -110,8 +112,8 @@ export function MessagePane() {
           )}
         </div>
         <div className="hidden items-center gap-1 sm:flex">
-          <HeaderBtn label="Search" />
-          <HeaderBtn label="Profile" />
+          <HeaderBtn label="Runbooks" />
+          <HeaderBtn label="Roster" />
         </div>
       </header>
 
@@ -137,7 +139,7 @@ export function MessagePane() {
               {showDay && (
                 <div className="relative my-4 flex items-center justify-center">
                   <div className="absolute inset-x-0 top-1/2 border-t border-border" />
-                  <span className="relative rounded-full border border-border bg-surface px-3 py-0.5 text-xs font-bold text-ink">
+                  <span className="relative rounded-full border border-border bg-surface px-3 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                     {formatDayLabel(msg.createdAt)}
                   </span>
                 </div>
@@ -188,23 +190,25 @@ function MessageRow({
         {compact ? (
           <div className="w-9 shrink-0" />
         ) : (
-          <div className="flex size-9 shrink-0 items-center justify-center rounded bg-avatar text-xs font-bold text-white">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded border border-white/10 bg-avatar font-mono text-[11px] font-bold text-white">
             {avatar}
           </div>
         )}
         <div className="min-w-0 flex-1">
           {!compact && (
             <div className="mb-0.5 flex items-baseline gap-2">
-              <span className="text-[15px] font-bold text-ink">{userName}</span>
-              <time className="text-[12px] text-ink-muted">
+              <span className="text-[14px] font-semibold text-white">
+                {userName}
+              </span>
+              <time className="font-mono text-[11px] text-ink-muted">
                 {formatTime(message.createdAt)}
               </time>
               {isMine && (
-                <span className="text-[11px] text-ink-muted">(you)</span>
+                <span className="font-mono text-[10px] text-ink-muted">you</span>
               )}
             </div>
           )}
-          <p className="whitespace-pre-wrap break-words text-[15px] leading-[1.45] text-ink">
+          <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.5] text-ink">
             {message.text}
           </p>
           {message.reactions.length > 0 && (
@@ -216,10 +220,10 @@ function MessageRow({
                     key={r.emoji}
                     type="button"
                     onClick={() => onToggleReaction(r.emoji)}
-                    className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs transition-colors ${
+                    className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[11px] transition-colors ${
                       mine
-                        ? "border-accent/40 bg-accent-soft text-ink"
-                        : "border-border bg-surface hover:border-accent/30"
+                        ? "border-white/30 bg-accent-soft text-white"
+                        : "border-border bg-black/40 hover:border-white/20"
                     }`}
                   >
                     <span>{r.emoji}</span>
@@ -235,7 +239,7 @@ function MessageRow({
             <button
               type="button"
               onClick={onOpenThread}
-              className="mt-1.5 text-[13px] font-bold text-link hover:underline"
+              className="mt-1.5 font-mono text-[12px] font-semibold text-white/70 hover:text-white"
             >
               {message.replyCount}{" "}
               {message.replyCount === 1 ? "reply" : "replies"}
@@ -244,7 +248,7 @@ function MessageRow({
         </div>
       </div>
 
-      <div className="absolute right-2 top-0 z-10 hidden -translate-y-1/2 items-center rounded-lg border border-border bg-surface shadow-sm group-hover:flex">
+      <div className="absolute right-2 top-0 z-10 hidden -translate-y-1/2 items-center rounded-lg border border-border bg-[#1a1a1a] shadow-lg group-hover:flex">
         {QUICK_EMOJIS.slice(0, 3).map((emoji) => (
           <button
             key={emoji}
@@ -258,7 +262,7 @@ function MessageRow({
         ))}
         <button
           type="button"
-          className="px-2 py-1 text-xs font-medium text-ink-muted hover:bg-hover"
+          className="px-2 py-1 font-mono text-[11px] font-medium text-ink-muted hover:bg-hover hover:text-white"
           onClick={onOpenThread}
         >
           Reply
@@ -272,7 +276,7 @@ function MessageRow({
           ···
         </button>
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-1 flex gap-0.5 rounded-lg border border-border bg-surface p-1 shadow-md">
+          <div className="absolute right-0 top-full mt-1 flex gap-0.5 rounded-lg border border-border bg-[#1a1a1a] p-1 shadow-md">
             {QUICK_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
@@ -296,13 +300,15 @@ function MessageRow({
 function EmptyState({ title }: { title: string }) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-      <div className="mb-3 flex size-14 items-center justify-center rounded-2xl bg-sidebar text-2xl text-white">
-        💬
+      <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-white/15 bg-white font-black text-black">
+        Z
       </div>
-      <h2 className="text-lg font-bold text-ink">This is the very beginning of {title}</h2>
+      <h2 className="text-base font-semibold text-white">
+        Start of {title}
+      </h2>
       <p className="mt-1 max-w-sm text-sm text-ink-muted">
-        Say hello, share an update, or drop a link. Messages stay in this
-        conversation.
+        Post fleet updates, incident acks, or dispatch notes. This channel stays
+        with the Zoox ops floor.
       </p>
     </div>
   );
@@ -312,7 +318,7 @@ function HeaderBtn({ label }: { label: string }) {
   return (
     <button
       type="button"
-      className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-ink-muted hover:bg-hover"
+      className="rounded-md border border-border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-ink-muted hover:border-white/20 hover:text-white"
     >
       {label}
     </button>

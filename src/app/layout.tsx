@@ -1,17 +1,21 @@
 import type { Metadata } from "next";
-import { Lato } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const lato = Lato({
-  variable: "--font-lato",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "700", "900"],
+});
+
+const mono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Relay — Slack clone",
+  title: "Zoox Fleet Ops — Workspace",
   description:
-    "A Slack-inspired workspace chat app with channels, DMs, threads, and reactions.",
+    "Zoox remote fleet operations workspace chat — channels, DMs, incidents, and shift handoffs.",
 };
 
 export default function RootLayout({
@@ -20,7 +24,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${lato.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${mono.variable} h-full antialiased`}
+    >
       <body className="min-h-full font-sans">{children}</body>
     </html>
   );

@@ -1,42 +1,34 @@
-# Relay
+# Zoox Fleet Ops — Workspace
 
-A Slack-inspired team chat workspace built with Next.js, React, and Tailwind CSS.
+Slack-style team chat remixed as a **Zoox remote fleet operations** work environment. Dark ops chrome, fleet channels, and roster pulled from the Zoox Fleet Ops simulation.
+
+## Live
+
+[https://relay-one-livid.vercel.app](https://relay-one-livid.vercel.app)
 
 ## Features
 
-- **Channels & DMs** — switch between public/private channels and direct messages
-- **Messaging** — send messages with Enter; Shift+Enter for newlines
-- **Threads** — open a reply thread from any message
-- **Reactions** — hover a message to add emoji reactions
-- **Presence** — online / away / DND / offline indicators
-- **Unread badges** — clear when you open a conversation
-- **Responsive** — collapsible sidebar on mobile
+- **Ops channels** — `#fleet-ops-bay`, `#field-dispatch`, `#eng-oncall`, `#incidents`, `#shift-handoff`
+- **Fleet status bar** — in-service / charging / incident counts
+- **DMs** — operators, field tech, eng on-call, depot
+- **Threads & reactions** — incident follow-ups without leaving channel context
+- You play as **Brandon Peralta** (Remote Fleet Operator · Bay-2)
 
 ## Stack
 
-- Next.js 16 (App Router)
-- React 19
-- TypeScript
-- Tailwind CSS 4
+- Next.js 16 · React 19 · TypeScript · Tailwind CSS 4
 
-## Getting started
+## Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+## Deploy
 
-## Scripts
+```bash
+npx vercel --prod
+```
 
-| Command        | Description              |
-| -------------- | ------------------------ |
-| `npm run dev`  | Start development server |
-| `npm run build`| Production build         |
-| `npm run start`| Run production server    |
-| `npm run lint` | Lint                     |
-
-## Notes
-
-Messages and reactions are stored in client state for demo purposes — refresh resets to seed data. You play as **Alex Rivera**.
+Simulated environment only — not affiliated with Zoox.

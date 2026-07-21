@@ -43,7 +43,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [directMessages, setDirectMessages] = useState(seedDms);
   const [active, setActiveState] = useState<Conversation>({
     type: "channel",
-    id: "c-general",
+    id: "c-fleet-ops",
   });
   const [threadRootId, setThreadRootId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);

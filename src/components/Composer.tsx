@@ -76,7 +76,7 @@ export function Composer({
             type="button"
             onClick={submit}
             disabled={!text.trim()}
-            className="rounded-md bg-accent px-3 py-1.5 text-sm font-bold text-white transition-opacity disabled:opacity-40 hover:brightness-110"
+            className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-40"
           >
             Send
           </button>

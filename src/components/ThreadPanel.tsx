@@ -43,7 +43,9 @@ export function ThreadPanel() {
   return (
     <aside className="flex w-full max-w-full flex-col border-l border-border bg-surface animate-slide-in md:w-[380px]">
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
-        <h2 className="text-[17px] font-bold text-ink">Thread</h2>
+        <h2 className="font-mono text-[14px] font-semibold uppercase tracking-wider text-white">
+          Thread
+        </h2>
         <button
           type="button"
           onClick={() => setThreadRootId(null)}
@@ -109,15 +111,15 @@ function ThreadMessage({
 }) {
   return (
     <div className="mb-3 flex gap-2 rounded-md px-1 py-1 hover:bg-hover">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded bg-avatar text-xs font-bold text-white">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded border border-white/10 bg-avatar font-mono text-[11px] font-bold text-white">
         {avatar}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <span className="text-sm font-bold text-ink">{name}</span>
-          <time className="text-[11px] text-ink-muted">{time}</time>
+          <span className="text-sm font-semibold text-white">{name}</span>
+          <time className="font-mono text-[11px] text-ink-muted">{time}</time>
         </div>
-        <p className="whitespace-pre-wrap break-words text-[15px] leading-[1.45] text-ink">
+        <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.5] text-ink">
           {text}
         </p>
         {reactions.length > 0 && (
@@ -129,9 +131,9 @@ function ThreadMessage({
                   key={r.emoji}
                   type="button"
                   onClick={() => onToggle(r.emoji)}
-                  className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs ${
+                  className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[11px] ${
                     mine
-                      ? "border-accent/40 bg-accent-soft"
+                      ? "border-white/30 bg-accent-soft"
                       : "border-border"
                   }`}
                 >
