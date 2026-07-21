@@ -4,7 +4,8 @@ Slack-style ops chat for **Zoox Fleet Operations** at **1600 Bryant St, San Fran
 
 ## Live
 
-[https://zoox-ops.vercel.app](https://zoox-ops.vercel.app)
+- **[https://zoox-ops.vercel.app](https://zoox-ops.vercel.app)** (primary)
+- [https://zoox-workspace.vercel.app](https://zoox-workspace.vercel.app)
 
 ## Features
 
