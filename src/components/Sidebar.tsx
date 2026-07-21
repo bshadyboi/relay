@@ -1,7 +1,7 @@
 "use client";
 
 import { workspace } from "@/lib/data";
-import type { Presence } from "@/lib/types";
+import type { Channel, Presence } from "@/lib/types";
 import { useWorkspace } from "@/lib/workspace";
 
 function PresenceDot({ presence }: { presence: Presence }) {
@@ -23,6 +23,13 @@ function PresenceDot({ presence }: { presence: Presence }) {
   );
 }
 
+const SECTION_LABELS: Record<string, string> = {
+  ops: "Ops",
+  field: "Field",
+  eng: "Eng",
+  social: "Social",
+};
+
 export function Sidebar() {
   const {
     channels,
@@ -37,11 +44,17 @@ export function Sidebar() {
     requestHandoff,
     logout,
     setAssistStatus,
+    setRosterOpen,
+    setProfileUserId,
+    liveTrafficOn,
+    setLiveTrafficOn,
   } = useWorkspace();
   const me = users.find((u) => u.id === currentUserId)!;
   const online = users.filter(
     (u) => u.presence === "active" || u.presence === "assist",
   ).length;
+
+  const sections = ["ops", "field", "eng", "social"] as const;
 
   return (
     <>
@@ -76,51 +89,35 @@ export function Sidebar() {
 
         <div className="flex-1 overflow-y-auto px-2 py-3 scrollbar-thin">
           <nav className="mb-4 space-y-0.5 px-2 text-[13px] text-sidebar-muted">
-            <SidebarLink label="Fleet floor" />
+            <SidebarLink
+              label="Team roster"
+              onClick={() => setRosterOpen(true)}
+            />
             <SidebarLink label="Mentions" badge={mentionCount || undefined} />
             <SidebarLink
               label={me.presence === "assist" ? "End assist" : "Start assist"}
               onClick={() => setAssistStatus(me.presence !== "assist")}
             />
+            <SidebarLink
+              label={liveTrafficOn ? "Live traffic · on" : "Live traffic · off"}
+              onClick={() => setLiveTrafficOn(!liveTrafficOn)}
+            />
             <SidebarLink label="End shift" onClick={requestHandoff} />
           </nav>
 
-          <Section title="Ops channels">
-            {channels.map((ch) => {
-              const isActive =
-                active.type === "channel" && active.id === ch.id;
-              return (
-                <button
-                  key={ch.id}
-                  type="button"
-                  onClick={() => setActive({ type: "channel", id: ch.id })}
-                  className={`group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[14px] transition-colors ${
-                    isActive
-                      ? "bg-sidebar-active text-white"
-                      : "text-sidebar-fg/90 hover:bg-white/5"
-                  }`}
-                >
-                  <span className="w-4 shrink-0 text-center font-mono text-[12px] text-sidebar-muted">
-                    {ch.isPrivate ? "🔒" : "#"}
-                  </span>
-                  <span
-                    className={`min-w-0 flex-1 truncate ${
-                      (ch.unread ?? 0) > 0 && !isActive
-                        ? "font-semibold text-white"
-                        : ""
-                    }`}
-                  >
-                    {ch.name}
-                  </span>
-                  {(ch.unread ?? 0) > 0 && !isActive && (
-                    <span className="rounded bg-white px-1.5 py-0.5 font-mono text-[10px] font-bold text-black">
-                      {ch.unread}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </Section>
+          {sections.map((section) => {
+            const list = channels.filter((c) => c.section === section);
+            if (!list.length) return null;
+            return (
+              <ChannelSection
+                key={section}
+                title={SECTION_LABELS[section]}
+                channels={list}
+                active={active}
+                onSelect={(id) => setActive({ type: "channel", id })}
+              />
+            );
+          })}
 
           <Section title="Direct messages">
             {directMessages.map((dm) => {
@@ -131,6 +128,10 @@ export function Sidebar() {
                   key={dm.id}
                   type="button"
                   onClick={() => setActive({ type: "dm", id: dm.id })}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setProfileUserId(user.id);
+                  }}
                   className={`group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[14px] transition-colors ${
                     isActive
                       ? "bg-sidebar-active text-white"
@@ -163,7 +164,11 @@ export function Sidebar() {
         </div>
 
         <div className="border-t border-border p-2">
-          <div className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-white/5">
+          <button
+            type="button"
+            onClick={() => setProfileUserId(me.id)}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-white/5"
+          >
             <span className="relative">
               <span className="flex size-9 items-center justify-center rounded border border-white/10 bg-avatar font-mono text-[11px] font-bold text-white">
                 {me.avatar}
@@ -180,20 +185,81 @@ export function Sidebar() {
                   : me.status ?? me.title}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={logout}
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                logout();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.stopPropagation();
+                  logout();
+                }
+              }}
               className="font-mono text-[10px] text-sidebar-muted hover:text-white"
             >
               out
-            </button>
-          </div>
+            </span>
+          </button>
           <p className="mt-1 px-2 font-mono text-[10px] text-sidebar-muted">
-            {online} online · Bryant · PST
+            {online} online · {users.filter((u) => u.role !== "Bot").length}{" "}
+            roster · Bryant
           </p>
         </div>
       </aside>
     </>
+  );
+}
+
+function ChannelSection({
+  title,
+  channels,
+  active,
+  onSelect,
+}: {
+  title: string;
+  channels: Channel[];
+  active: { type: string; id: string };
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <Section title={title}>
+      {channels.map((ch) => {
+        const isActive = active.type === "channel" && active.id === ch.id;
+        return (
+          <button
+            key={ch.id}
+            type="button"
+            onClick={() => onSelect(ch.id)}
+            className={`group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[14px] transition-colors ${
+              isActive
+                ? "bg-sidebar-active text-white"
+                : "text-sidebar-fg/90 hover:bg-white/5"
+            }`}
+          >
+            <span className="w-4 shrink-0 text-center font-mono text-[12px] text-sidebar-muted">
+              {ch.isPrivate ? "🔒" : "#"}
+            </span>
+            <span
+              className={`min-w-0 flex-1 truncate ${
+                (ch.unread ?? 0) > 0 && !isActive
+                  ? "font-semibold text-white"
+                  : ""
+              }`}
+            >
+              {ch.name}
+            </span>
+            {(ch.unread ?? 0) > 0 && !isActive && (
+              <span className="rounded bg-white px-1.5 py-0.5 font-mono text-[10px] font-bold text-black">
+                {ch.unread}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </Section>
   );
 }
 

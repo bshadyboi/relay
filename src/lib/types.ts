@@ -1,5 +1,7 @@
 export type Presence = "active" | "away" | "dnd" | "offline" | "assist";
 
+export type ShiftBlock = "Day" | "Swing" | "Night";
+
 export type User = {
   id: string;
   name: string;
@@ -11,6 +13,8 @@ export type User = {
   email?: string;
   role?: string;
   badgeId?: string;
+  shift?: ShiftBlock;
+  bay?: string;
 };
 
 export type Reaction = {
@@ -32,6 +36,8 @@ export type Message = {
   attachmentName?: string;
 };
 
+export type ChannelSection = "ops" | "field" | "eng" | "social";
+
 export type Channel = {
   id: string;
   name: string;
@@ -40,6 +46,7 @@ export type Channel = {
   memberIds: string[];
   unread?: number;
   topic?: string;
+  section?: ChannelSection;
 };
 
 export type DirectMessage = {

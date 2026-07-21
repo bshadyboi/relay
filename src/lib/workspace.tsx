@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -19,6 +20,7 @@ import {
   users as seedUsers,
   vehicles as seedVehicles,
 } from "./data";
+import { LIVE_EVENTS } from "./liveTraffic";
 import { extractMentionUserIds } from "./parseMessage";
 import type {
   AlertToast,
@@ -51,6 +53,9 @@ type WorkspaceContextValue = {
   runbooksOpen: boolean;
   searchOpen: boolean;
   pinsOpen: boolean;
+  rosterOpen: boolean;
+  profileUserId: string | null;
+  liveTrafficOn: boolean;
   alerts: AlertToast[];
   mentionCount: number;
   shift: ShiftMetrics | null;
@@ -69,6 +74,10 @@ type WorkspaceContextValue = {
   setRunbooksOpen: (open: boolean) => void;
   setSearchOpen: (open: boolean) => void;
   setPinsOpen: (open: boolean) => void;
+  setRosterOpen: (open: boolean) => void;
+  setProfileUserId: (id: string | null) => void;
+  setLiveTrafficOn: (on: boolean) => void;
+  openDm: (userId: string) => void;
   dismissAlert: (id: string) => void;
   sendMessage: (text: string, threadId?: string, attachmentName?: string) => void;
   toggleReaction: (messageId: string, emoji: string) => void;
@@ -105,9 +114,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [runbooksOpen, setRunbooksOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [pinsOpen, setPinsOpen] = useState(false);
+  const [rosterOpen, setRosterOpen] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [liveTrafficOn, setLiveTrafficOn] = useState(true);
   const [alerts, setAlerts] = useState<AlertToast[]>([]);
   const [shift, setShift] = useState<ShiftMetrics | null>(null);
   const [handoffNotes, setHandoffNotes] = useState("");
+  const [liveIndex, setLiveIndex] = useState(0);
+  const activeRef = useRef(active);
+
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
 
   useEffect(() => {
     const existing = loadSession();
@@ -139,6 +157,52 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }, 12000);
     return () => window.clearTimeout(t);
   }, [hydrated, screen]);
+
+  useEffect(() => {
+    if (!hydrated || screen !== "workspace" || !liveTrafficOn) return;
+    if (liveIndex >= LIVE_EVENTS.length) return;
+
+    const delay = 9000 + (liveIndex % 3) * 4000;
+    const t = window.setTimeout(() => {
+      const event = LIVE_EVENTS[liveIndex];
+      const viewing =
+        activeRef.current.type === "channel" &&
+        activeRef.current.id === event.channelId;
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uid("live"),
+          channelId: event.channelId,
+          userId: event.userId,
+          text: event.text,
+          createdAt: new Date().toISOString(),
+          reactions: [],
+        },
+      ]);
+
+      if (event.bumpUnread && !viewing) {
+        setChannels((prev) =>
+          prev.map((c) =>
+            c.id === event.channelId
+              ? { ...c, unread: (c.unread ?? 0) + 1 }
+              : c,
+          ),
+        );
+      }
+
+      if (event.alert) {
+        setAlerts((prev) => [
+          ...prev,
+          { id: uid("alert"), ...event.alert! },
+        ]);
+      }
+
+      setLiveIndex((i) => i + 1);
+    }, delay);
+
+    return () => window.clearTimeout(t);
+  }, [hydrated, screen, liveTrafficOn, liveIndex]);
 
   const currentUserId = session?.userId ?? "u1";
 
@@ -403,6 +467,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [currentUserId],
   );
 
+  const openDm = useCallback(
+    (userId: string) => {
+      const existing = directMessages.find((d) => d.userId === userId);
+      if (existing) {
+        setActive({ type: "dm", id: existing.id });
+      } else {
+        const id = `dm-${userId}`;
+        setDirectMessages((prev) => [...prev, { id, userId }]);
+        setActive({ type: "dm", id });
+      }
+      setRosterOpen(false);
+      setProfileUserId(null);
+    },
+    [directMessages, setActive],
+  );
+
   const dismissAlert = useCallback((id: string) => {
     setAlerts((prev) => prev.filter((a) => a.id !== id));
   }, []);
@@ -425,6 +505,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       runbooksOpen,
       searchOpen,
       pinsOpen,
+      rosterOpen,
+      profileUserId,
+      liveTrafficOn,
       alerts,
       mentionCount,
       shift,
@@ -443,6 +526,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setRunbooksOpen,
       setSearchOpen,
       setPinsOpen,
+      setRosterOpen,
+      setProfileUserId,
+      setLiveTrafficOn,
+      openDm,
       dismissAlert,
       sendMessage,
       toggleReaction,
@@ -470,6 +557,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       runbooksOpen,
       searchOpen,
       pinsOpen,
+      rosterOpen,
+      profileUserId,
+      liveTrafficOn,
       alerts,
       mentionCount,
       shift,
@@ -489,6 +579,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setAssistStatus,
       clearUnread,
       dismissAlert,
+      openDm,
     ],
   );
 

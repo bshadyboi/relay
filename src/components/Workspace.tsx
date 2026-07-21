@@ -6,6 +6,7 @@ import { Composer } from "@/components/Composer";
 import { DetailPanel } from "@/components/DetailPanel";
 import { Login } from "@/components/Login";
 import { MessagePane } from "@/components/MessagePane";
+import { RosterDrawer } from "@/components/RosterDrawer";
 import { RunbooksDrawer } from "@/components/RunbooksDrawer";
 import { PinsDrawer, SearchModal } from "@/components/SearchModal";
 import { ShiftClockIn, ShiftHandoff } from "@/components/ShiftFlow";
@@ -15,25 +16,45 @@ import { OFFICE } from "@/lib/data";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 
 function OpsStatusBar() {
-  const { incidents, requestHandoff, setSearchOpen, mentionCount } =
-    useWorkspace();
+  const {
+    incidents,
+    requestHandoff,
+    setSearchOpen,
+    mentionCount,
+    users,
+    liveTrafficOn,
+    setRosterOpen,
+  } = useWorkspace();
   const open = incidents.filter((i) => i.stage !== "resolved").length;
+  const online = users.filter(
+    (u) => u.presence === "active" || u.presence === "assist",
+  ).length;
 
   return (
     <div className="flex h-9 shrink-0 items-center gap-3 overflow-x-auto border-b border-border bg-black px-3 font-mono text-[10px] text-ink-muted scrollbar-thin">
       <span className="flex items-center gap-1.5 text-white">
         <span className="size-1.5 animate-pulse-dot rounded-full bg-presence-active" />
-        LIVE
+        {liveTrafficOn ? "LIVE" : "PAUSED"}
       </span>
       <Stat label="In service" value="14" color="text-presence-active" />
-      <Stat label="Idle" value="3" />
-      <Stat label="Charging" value="2" color="text-blue-400" />
+      <Stat label="Online" value={String(online)} />
       <Stat label="Incidents" value={String(open)} color="text-urgent" pulse />
       {mentionCount > 0 && (
-        <Stat label="Mentions" value={String(mentionCount)} color="text-amber-300" />
+        <Stat
+          label="Mentions"
+          value={String(mentionCount)}
+          color="text-amber-300"
+        />
       )}
       <span className="ml-auto hidden items-center gap-3 sm:flex">
         <span>{OFFICE.label}</span>
+        <button
+          type="button"
+          onClick={() => setRosterOpen(true)}
+          className="rounded border border-border px-1.5 py-0.5 hover:text-white"
+        >
+          Roster
+        </button>
         <button
           type="button"
           onClick={() => setSearchOpen(true)}
@@ -145,6 +166,7 @@ function WorkspaceShell() {
       <SearchModal />
       <PinsDrawer />
       <RunbooksDrawer />
+      <RosterDrawer />
       <AlertToasts />
       <Shortcuts />
     </div>
